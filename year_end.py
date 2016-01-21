@@ -1,37 +1,39 @@
 import json
 
-with open("fitocracyHistory.json") as f:
-    encoded = f.readlines()
-decoded = json.loads(encoded[0])
+myHistoryFile = "fitocracyHistory.json"
+with open(myHistoryFile) as file:
+    decoded = json.load(file)
+    
+def get_subtotals(exercise):
+    points = 0
+    kgs = 0
+    km = 0
+    for workout_set in exercise:
+        points += workout_set['points']
+        try:
+            unit = workout_set['effort1_metric_unit']['name']
+        except TypeError:   # first key was None
+            continue
+        if unit == 'Reps':
+            weight = 0 if not workout_set['effort0_metric'] else workout_set['effort0_metric']
+            reps = workout_set['effort1']
+            multiplier = workout_set['action']['multiplier']
+            kgs += weight * reps * multiplier
+        elif unit == 'Kilometers':
+            km += workout_set['effort1_metric']
+        elif unit == 'Meters':
+            km += workout_set['effort1_metric'] / 1000.0
+        else:
+            print('unexpected unit: {}'.format(unit))
+    return {"points": points, "kgs": kgs, "km": km}
 
-points = 0
-kgs = 0
-km = 0
-
+totals = {"points": 0, "kgs": 0, "km": 0}
 for identifier in decoded:
-    multiplier = 1
-    if "dumb" in decoded[identifier]['name'].lower():
-        multiplier = 2
     for item in decoded[identifier]['data']:
         if "2015" in item['date']:
-            for item2 in item['actions']:
-                reps=item2['effort1_metric_string']
-                if type(reps) == str:
-                    if 'reps' in reps:
-                        reps = float(reps[0:-4])
-                        weight = item2['effort0_string']
-                        if type(weight) == str and 'kg' in weight:
-                            weight=float(weight[0:-2])
-                            kgs += weight * reps * multiplier
-                    else:
-                        if 'k' in reps:
-                            reps = float(reps[0:-2])
-                        else:
-                            reps = (float(reps[0:-1]))/1000
-                        km += reps
-                
-                points += item2['points']
-
-print(str(points) + " points")
-print("{0:.0f}".format(kgs) + " kgs")
-print("{0:.2f}".format(km) + " km")
+            subtotals = get_subtotals(item['actions'])
+            totals = {key: totals[key] + subtotals[key] for key in totals}
+            
+print("{} points".format(totals["points"]))
+print("{0:.0f} kgs".format(totals["kgs"]))
+print("{0:.2f} km".format(totals["km"]))
