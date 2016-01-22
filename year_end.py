@@ -1,9 +1,5 @@
 import json
 
-myHistoryFile = "fitocracyHistory.json"
-with open(myHistoryFile) as file:
-    decoded = json.load(file)
-    
 def get_subtotals(exercise):
     points = 0
     kgs = 0
@@ -27,13 +23,27 @@ def get_subtotals(exercise):
             print('unexpected unit: {}'.format(unit))
     return {"points": points, "kgs": kgs, "km": km}
 
-totals = {"points": 0, "kgs": 0, "km": 0}
-for identifier in decoded:
-    for item in decoded[identifier]['data']:
-        if "2015" in item['date']:
-            subtotals = get_subtotals(item['actions'])
-            totals = {key: totals[key] + subtotals[key] for key in totals}
-            
-print("{} points".format(totals["points"]))
-print("{0:.0f} kgs".format(totals["kgs"]))
-print("{0:.2f} km".format(totals["km"]))
+try:
+    myHistoryFile = "fitocracyHistory.json"
+    with open(myHistoryFile) as file:
+        decoded = json.load(file)
+
+    year = "2015"
+    totals = {"points": 0, "kgs": 0, "km": 0}
+    for identifier in decoded:
+        for item in decoded[identifier]['data']:
+            if year in item['date']:
+                subtotals = get_subtotals(item['actions'])
+                totals = {key: totals[key] + subtotals[key] for key in totals}
+
+    print("{} totals:\n".format(year))            
+    print("{} points".format(totals["points"]))
+    print("{0:.0f} kgs".format(totals["kgs"]))
+    print("{0:.2f} km".format(totals["km"]))
+    
+finally:
+    import sys
+    if sys.stdout.isatty():
+        input("\npress is tty enter to continue")
+    else:
+        print('bla')
